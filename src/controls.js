@@ -1,15 +1,18 @@
 import * as THREE from 'three'
 
+/**
+ * Controls for non-AR fallback mode.
+ * In AR mode, the headset/glasses handle camera tracking.
+ */
 export function setupControls(camera, domElement) {
-  // Custom orbital controls — lightweight, no external dependency
   const state = {
     isDragging: false,
     previousMouse: { x: 0, y: 0 },
-    spherical: new THREE.Spherical(8, Math.PI / 2.2, 0),
-    target: new THREE.Vector3(0, 1.4, 0),
+    spherical: new THREE.Spherical(4, Math.PI / 2.2, 0),
+    target: new THREE.Vector3(0, 1.2, 0),
     damping: { theta: 0, phi: 0, radius: 0 },
     autoRotate: true,
-    autoRotateSpeed: 0.15,
+    autoRotateSpeed: 0.1,
   }
 
   function updateCamera() {
@@ -40,7 +43,6 @@ export function setupControls(camera, domElement) {
 
   domElement.addEventListener('pointerup', () => {
     state.isDragging = false
-    // Resume auto-rotate after 3 seconds
     setTimeout(() => {
       if (!state.isDragging) state.autoRotate = true
     }, 3000)
@@ -93,21 +95,17 @@ export function setupControls(camera, domElement) {
 
   return {
     update(delta) {
-      // Auto rotation
       if (state.autoRotate) {
         state.damping.theta += state.autoRotateSpeed * 0.016
       }
 
-      // Apply damping
       state.spherical.theta += state.damping.theta * 0.08
       state.spherical.phi += state.damping.phi * 0.08
       state.spherical.radius += state.damping.radius * 0.08
 
-      // Clamp
       state.spherical.phi = THREE.MathUtils.clamp(state.spherical.phi, 0.3, Math.PI - 0.3)
-      state.spherical.radius = THREE.MathUtils.clamp(state.spherical.radius, 3, 15)
+      state.spherical.radius = THREE.MathUtils.clamp(state.spherical.radius, 1.5, 10)
 
-      // Decay damping
       state.damping.theta *= 0.92
       state.damping.phi *= 0.92
       state.damping.radius *= 0.88

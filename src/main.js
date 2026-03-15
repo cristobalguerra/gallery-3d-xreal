@@ -1,16 +1,15 @@
 import * as THREE from 'three'
 import { createFrames } from './frames.js'
 import { setupControls } from './controls.js'
-import { setupXR } from './xr.js'
-import { createEnvironment } from './environment.js'
+import { setupAR } from './xr.js'
 
 // ── Scene Setup ──────────────────────────────────────────────
 const scene = new THREE.Scene()
-scene.background = new THREE.Color(0x050508)
-scene.fog = new THREE.FogExp2(0x050508, 0.035)
+// No background — transparent for AR passthrough
+scene.background = null
 
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100)
-camera.position.set(0, 1.6, 8)
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 100)
+camera.position.set(0, 1.6, 0)
 
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
@@ -21,38 +20,70 @@ renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.outputColorSpace = THREE.SRGBColorSpace
 renderer.toneMapping = THREE.ACESFilmicToneMapping
-renderer.toneMappingExposure = 1.2
+renderer.toneMappingExposure = 1.0
+renderer.setClearColor(0x000000, 0)
 renderer.xr.enabled = true
 document.body.appendChild(renderer.domElement)
 
-// ── Lighting ─────────────────────────────────────────────────
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.15)
+// ── Lighting (subtle, works with AR) ─────────────────────────
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.8)
 scene.add(ambientLight)
 
-const mainLight = new THREE.DirectionalLight(0xeeeeff, 0.6)
-mainLight.position.set(5, 10, 5)
+const mainLight = new THREE.DirectionalLight(0xffffff, 0.6)
+mainLight.position.set(2, 5, 3)
+mainLight.castShadow = true
+mainLight.shadow.mapSize.set(1024, 1024)
 scene.add(mainLight)
 
-// ── Environment ──────────────────────────────────────────────
-createEnvironment(scene)
+// Hemisphere light for natural AR blending
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4)
+scene.add(hemiLight)
 
 // ── Frames ───────────────────────────────────────────────────
 const { frames, frameGroup } = createFrames(scene)
 
-// ── Controls ─────────────────────────────────────────────────
+// ── Controls (fallback for non-AR) ───────────────────────────
 const controls = setupControls(camera, renderer.domElement)
 
-// ── XR (Xreal / WebXR) ──────────────────────────────────────
-setupXR(renderer, scene, camera)
+// ── AR Setup ─────────────────────────────────────────────────
+const arState = setupAR(renderer, scene, camera, frameGroup)
 
-// ── Raycaster for hover ──────────────────────────────────────
+// ── Raycaster for interaction ────────────────────────────────
 const raycaster = new THREE.Raycaster()
 const mouse = new THREE.Vector2()
 let hoveredFrame = null
+let selectedFrame = null
 
 renderer.domElement.addEventListener('mousemove', (e) => {
   mouse.x = (e.clientX / window.innerWidth) * 2 - 1
   mouse.y = -(e.clientY / window.innerHeight) * 2 + 1
+})
+
+// Tap to select frame in AR
+renderer.domElement.addEventListener('click', (e) => {
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1
+
+  raycaster.setFromCamera(mouse, camera)
+  const intersects = raycaster.intersectObjects(frames, true)
+
+  if (intersects.length > 0) {
+    let obj = intersects[0].object
+    while (obj.parent && !obj.userData.isFrame) obj = obj.parent
+    if (obj.userData.isFrame) {
+      if (selectedFrame === obj) {
+        // Deselect — return to original position
+        obj.userData.selected = false
+        selectedFrame = null
+      } else {
+        // Deselect previous
+        if (selectedFrame) selectedFrame.userData.selected = false
+        // Select new — bring closer
+        obj.userData.selected = true
+        selectedFrame = obj
+      }
+    }
+  }
 })
 
 // ── Resize ───────────────────────────────────────────────────
@@ -65,38 +96,61 @@ window.addEventListener('resize', () => {
 // ── Animation Loop ───────────────────────────────────────────
 const clock = new THREE.Clock()
 
-function animate() {
+function animate(timestamp, xrFrame) {
   const elapsed = clock.getElapsedTime()
   const delta = clock.getDelta()
+  const inXR = renderer.xr.isPresenting
 
   // Float animation for frames
   frames.forEach((frame, i) => {
     const baseY = frame.userData.baseY
     const phase = frame.userData.phase
     const speed = frame.userData.floatSpeed
-    frame.position.y = baseY + Math.sin(elapsed * speed + phase) * 0.08
-    frame.rotation.y = frame.userData.baseRotY + Math.sin(elapsed * 0.3 + phase) * 0.02
+
+    // Gentle floating
+    const floatY = Math.sin(elapsed * speed + phase) * 0.05
+    const floatRotY = Math.sin(elapsed * 0.3 + phase) * 0.015
+
+    frame.position.y = baseY + floatY
+
+    if (!inXR) {
+      frame.rotation.y = frame.userData.baseRotY + floatRotY
+    }
+
+    // Selected frame: pulse glow
+    if (frame.userData.selected) {
+      frame.userData.targetScale = 1.08
+      // Pulse the glow
+      const glow = frame.children.find(c => c.material && c.material.opacity < 0.5)
+      if (glow) {
+        glow.material.opacity = 0.08 + Math.sin(elapsed * 2) * 0.04
+      }
+    } else {
+      frame.userData.targetScale = frame.userData.targetScale === 1.08 ? 1.0 : frame.userData.targetScale
+    }
   })
 
-  // Raycaster hover effect
-  raycaster.setFromCamera(mouse, camera)
-  const intersects = raycaster.intersectObjects(frames, true)
+  // Raycaster hover (non-XR)
+  if (!inXR) {
+    raycaster.setFromCamera(mouse, camera)
+    const intersects = raycaster.intersectObjects(frames, true)
 
-  if (hoveredFrame) {
-    hoveredFrame.userData.targetScale = 1.0
-    hoveredFrame = null
-  }
-
-  if (intersects.length > 0) {
-    let obj = intersects[0].object
-    while (obj.parent && !obj.userData.isFrame) obj = obj.parent
-    if (obj.userData.isFrame) {
-      hoveredFrame = obj
-      hoveredFrame.userData.targetScale = 1.06
-      renderer.domElement.style.cursor = 'pointer'
+    if (hoveredFrame && !hoveredFrame.userData.selected) {
+      hoveredFrame.userData.targetScale = 1.0
+      hoveredFrame = null
     }
-  } else {
-    renderer.domElement.style.cursor = 'default'
+
+    if (intersects.length > 0) {
+      let obj = intersects[0].object
+      while (obj.parent && !obj.userData.isFrame) obj = obj.parent
+      if (obj.userData.isFrame && !obj.userData.selected) {
+        hoveredFrame = obj
+        hoveredFrame.userData.targetScale = 1.04
+        renderer.domElement.style.cursor = 'pointer'
+      }
+    } else {
+      renderer.domElement.style.cursor = 'default'
+    }
   }
 
   // Smooth scale transitions
@@ -107,14 +161,11 @@ function animate() {
     frame.scale.setScalar(newScale)
   })
 
-  // Gentle global rotation for particle environment
-  const particles = scene.getObjectByName('particles')
-  if (particles) {
-    particles.rotation.y = elapsed * 0.02
-    particles.rotation.x = Math.sin(elapsed * 0.01) * 0.05
+  // Non-XR controls
+  if (!inXR) {
+    controls.update(delta)
   }
 
-  controls.update(delta)
   renderer.render(scene, camera)
 }
 

@@ -1,9 +1,9 @@
 {
   "appId": "com.gallery3d.xreal",
-  "appName": "Gallery 3D",
+  "appName": "Gallery AR",
   "webDir": "dist",
   "android": {
-    "backgroundColor": "#050508",
+    "backgroundColor": "#00000000",
     "allowMixedContent": true,
     "webContentsDebuggingEnabled": true
   },
@@ -13,7 +13,8 @@
   "plugins": {
     "StatusBar": {
       "style": "DARK",
-      "backgroundColor": "#050508"
+      "backgroundColor": "#00000000",
+      "overlaysWebView": true
     }
   }
 }

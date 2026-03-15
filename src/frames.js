@@ -1,13 +1,12 @@
 import * as THREE from 'three'
 
 // 9:16 aspect ratio frame dimensions
-const FRAME_W = 1.0
+const FRAME_W = 0.6
 const FRAME_H = FRAME_W * (16 / 9)
-const FRAME_DEPTH = 0.04
-const BORDER = 0.05
+const FRAME_DEPTH = 0.02
+const BORDER = 0.03
 
-// Gallery images — procedurally generated art as placeholders
-// Replace these with your own images in /public/textures/
+// Gallery art data
 const GALLERY_DATA = [
   { title: 'Nebula I', color: '#1a0a2e', accent: '#7b2ff7' },
   { title: 'Void', color: '#0a1628', accent: '#00d4ff' },
@@ -33,7 +32,6 @@ function generateArtTexture(data, index) {
   ctx.fillStyle = bgGrad
   ctx.fillRect(0, 0, 540, 960)
 
-  // Abstract art based on index
   const type = index % 4
 
   if (type === 0) {
@@ -68,7 +66,6 @@ function generateArtTexture(data, index) {
       ctx.lineTo(i, 960)
       ctx.stroke()
     }
-    // Focal circle
     const radGrad = ctx.createRadialGradient(270, 480, 0, 270, 480, 200)
     radGrad.addColorStop(0, data.accent + '60')
     radGrad.addColorStop(1, 'transparent')
@@ -90,11 +87,11 @@ function generateArtTexture(data, index) {
   }
 
   // Title at bottom
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'
-  ctx.font = '300 11px "Helvetica Neue", sans-serif'
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'
+  ctx.font = '300 13px "Helvetica Neue", sans-serif'
   ctx.letterSpacing = '4px'
   ctx.textAlign = 'center'
-  ctx.fillText(data.title.toUpperCase(), 270, 910)
+  ctx.fillText(data.title.toUpperCase(), 270, 920)
 
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
@@ -105,36 +102,45 @@ export function createFrames(scene) {
   const frames = []
   const frameGroup = new THREE.Group()
 
-  // Layout: circular arrangement
-  const radius = 5
+  // Layout: semicircle in front of user (AR-friendly)
+  const radius = 2.5
   const count = GALLERY_DATA.length
-  const angleStep = (Math.PI * 2) / count
+  const arcAngle = Math.PI * 1.2 // ~216 degrees arc
+  const startAngle = -arcAngle / 2
 
   GALLERY_DATA.forEach((data, i) => {
-    const angle = i * angleStep - Math.PI / 2
-    const x = Math.cos(angle) * radius
-    const z = Math.sin(angle) * radius
-    const y = 1.6 + (Math.random() - 0.5) * 0.6
+    const t = count > 1 ? i / (count - 1) : 0.5
+    const angle = startAngle + t * arcAngle
+    const x = Math.sin(angle) * radius
+    const z = -Math.cos(angle) * radius
+    // Stagger heights for visual interest
+    const row = i % 3
+    const y = 0.8 + row * 0.55 + (Math.random() - 0.5) * 0.15
 
     // Frame group
     const frame = new THREE.Group()
     frame.userData.isFrame = true
     frame.userData.baseY = y
-    frame.userData.baseRotY = -angle + Math.PI / 2
+    frame.userData.baseRotY = angle
     frame.userData.phase = Math.random() * Math.PI * 2
-    frame.userData.floatSpeed = 0.4 + Math.random() * 0.3
+    frame.userData.floatSpeed = 0.3 + Math.random() * 0.25
     frame.userData.targetScale = 1.0
+    frame.userData.selected = false
 
-    // Frame border (matte black)
+    // Glass-like frame border
     const borderGeo = new THREE.BoxGeometry(
       FRAME_W + BORDER * 2,
       FRAME_H + BORDER * 2,
       FRAME_DEPTH
     )
-    const borderMat = new THREE.MeshStandardMaterial({
-      color: 0x111111,
-      metalness: 0.8,
-      roughness: 0.3,
+    const borderMat = new THREE.MeshPhysicalMaterial({
+      color: 0x222222,
+      metalness: 0.95,
+      roughness: 0.05,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.1,
+      transparent: true,
+      opacity: 0.9,
     })
     const borderMesh = new THREE.Mesh(borderGeo, borderMat)
     frame.add(borderMesh)
@@ -149,30 +155,44 @@ export function createFrames(scene) {
     artMesh.position.z = FRAME_DEPTH / 2 + 0.001
     frame.add(artMesh)
 
-    // Subtle glow behind frame
-    const glowGeo = new THREE.PlaneGeometry(FRAME_W + 0.4, FRAME_H + 0.4)
+    // Subtle glow behind frame (visible in AR)
+    const glowGeo = new THREE.PlaneGeometry(FRAME_W + 0.2, FRAME_H + 0.2)
     const glowMat = new THREE.MeshBasicMaterial({
       color: new THREE.Color(data.accent),
       transparent: true,
-      opacity: 0.04,
+      opacity: 0.06,
       side: THREE.DoubleSide,
+      depthWrite: false,
     })
     const glowMesh = new THREE.Mesh(glowGeo, glowMat)
-    glowMesh.position.z = -FRAME_DEPTH / 2 - 0.01
+    glowMesh.position.z = -FRAME_DEPTH / 2 - 0.005
     frame.add(glowMesh)
 
-    // Spot light per frame
-    const spotLight = new THREE.PointLight(
+    // Soft point light per frame (low intensity for AR)
+    const pointLight = new THREE.PointLight(
       new THREE.Color(data.accent),
-      0.3,
-      4,
+      0.15,
+      2,
       2
     )
-    spotLight.position.set(0, 0, 1)
-    frame.add(spotLight)
+    pointLight.position.set(0, 0, 0.5)
+    frame.add(pointLight)
+
+    // Shadow plane under each frame (grounds it in AR)
+    const shadowGeo = new THREE.PlaneGeometry(FRAME_W * 0.6, 0.08)
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.15,
+      depthWrite: false,
+    })
+    const shadow = new THREE.Mesh(shadowGeo, shadowMat)
+    shadow.rotation.x = -Math.PI / 2
+    shadow.position.y = -FRAME_H / 2 - 0.1
+    frame.add(shadow)
 
     frame.position.set(x, y, z)
-    frame.rotation.y = -angle + Math.PI / 2
+    frame.lookAt(0, y, 0) // Face center
 
     frameGroup.add(frame)
     frames.push(frame)
