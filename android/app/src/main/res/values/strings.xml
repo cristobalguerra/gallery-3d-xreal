@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Gallery 3D</string>
+    <string name="title_activity_main">Gallery 3D</string>
+    <string name="package_name">com.gallery3d.xreal</string>
+    <string name="custom_url_scheme">com.gallery3d.xreal</string>
+</resources>

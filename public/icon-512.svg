@@ -1,0 +1,7 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'>
+  <rect width='512' height='512' rx='64' fill='#050508'/>
+  <rect x='160' y='96' width='192' height='320' rx='10' fill='none' stroke='#444466' stroke-width='2'/>
+  <circle cx='256' cy='256' r='53' fill='none' stroke='#7b2ff7' stroke-width='1.5' opacity='0.6'/>
+  <circle cx='256' cy='256' r='93' fill='none' stroke='#7b2ff7' stroke-width='1' opacity='0.3'/>
+  <text x='96' y='470' text-anchor='middle' font-family='Helvetica' font-size='10' fill='#666' letter-spacing='3'>G3D</text>
+</svg>

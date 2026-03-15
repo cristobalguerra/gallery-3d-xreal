@@ -1,0 +1,19 @@
+{
+  "name": "gallery-3d-xreal",
+  "version": "1.0.0",
+  "description": "3D floating gallery for Xreal glasses + Beam Pro",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

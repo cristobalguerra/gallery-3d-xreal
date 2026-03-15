@@ -1,0 +1,19 @@
+{
+  "appId": "com.gallery3d.xreal",
+  "appName": "Gallery 3D",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#050508",
+    "allowMixedContent": true,
+    "webContentsDebuggingEnabled": true
+  },
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#050508"
+    }
+  }
+}
