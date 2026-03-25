@@ -10,3 +10,4 @@ android/build/
 android/captures/
 android/local.properties
 ._*
+.vite/
