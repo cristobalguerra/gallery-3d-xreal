@@ -7,7 +7,7 @@ const FRAME_DEPTH = 0.02
 const BORDER = 0.03
 
 // Gallery art data
-const GALLERY_DATA = [
+export const GALLERY_DATA = [
   { title: 'Nebula I', color: '#1a0a2e', accent: '#7b2ff7' },
   { title: 'Void', color: '#0a1628', accent: '#00d4ff' },
   { title: 'Drift', color: '#1a0000', accent: '#ff3366' },
