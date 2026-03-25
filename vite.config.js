@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+  base: '/gallery-3d-xreal/',
   server: {
     host: '0.0.0.0',
     port: 5173,
