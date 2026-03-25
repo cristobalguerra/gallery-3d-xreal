@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Gallery AR — Xreal</title>
+  <link rel="manifest" href="/gallery-3d-xreal/manifest.json" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="icon" href="/gallery-3d-xreal/icon-192.svg" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      overflow: hidden;
+      background: transparent;
+      width: 100%; height: 100%;
+    }
+    canvas { display: block; }
+    #loader {
+      position: fixed; inset: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px;
+      background: rgba(0,0,0,0.9); color: #fff;
+      font-family: 'Helvetica Neue', sans-serif;
+      font-size: 13px; letter-spacing: 4px; text-transform: uppercase;
+      transition: opacity 0.8s ease;
+    }
+    #loader.hidden { opacity: 0; pointer-events: none; }
+    #loader .sub {
+      font-size: 10px; letter-spacing: 2px;
+      color: rgba(255,255,255,0.4);
+    }
+    #xr-button {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      z-index: 50;
+      padding: 14px 36px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff; font-family: 'Helvetica Neue', sans-serif;
+      font-size: 13px; letter-spacing: 4px; text-transform: uppercase;
+      cursor: pointer; border-radius: 40px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: all 0.3s ease;
+      display: none;
+    }
+    #xr-button:hover, #xr-button:active {
+      background: rgba(255,255,255,0.2);
+      border-color: rgba(255,255,255,0.4);
+    }
+    #info {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      z-index: 40;
+      color: rgba(255,255,255,0.3);
+      font-family: 'Helvetica Neue', sans-serif;
+      font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+    }
+    #ar-overlay {
+      position: fixed; inset: 0; z-index: 60;
+      pointer-events: none;
+      display: none;
+    }
+    #ar-overlay.active { display: flex; }
+    #ar-instructions {
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,0.8);
+      font-family: 'Helvetica Neue', sans-serif;
+      font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+      text-align: center;
+      background: rgba(0,0,0,0.4);
+      padding: 12px 24px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      pointer-events: none;
+    }
+    /* Book overlay */
+    #book-overlay {
+      position: fixed; inset: 0; z-index: 70;
+      display: none;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-direction: column;
+      pointer-events: none;
+      padding: 20px;
+    }
+    #book-close {
+      align-self: flex-end;
+      pointer-events: auto;
+      padding: 10px 24px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+      font-family: 'Helvetica Neue', sans-serif;
+      font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer; border-radius: 20px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: all 0.3s ease;
+    }
+    #book-close:hover, #book-close:active {
+      background: rgba(255,255,255,0.25);
+      border-color: rgba(255,255,255,0.4);
+    }
+    #book-page-indicator {
+      align-self: center;
+      color: rgba(255,255,255,0.5);
+      font-family: 'Helvetica Neue', sans-serif;
+      font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+      background: rgba(0,0,0,0.3);
+      padding: 8px 20px;
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    #book-hint {
+      align-self: center;
+      color: rgba(255,255,255,0.3);
+      font-family: 'Helvetica Neue', sans-serif;
+      font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 10px;
+      animation: fadeHint 3s ease-in-out forwards;
+    }
+    @keyframes fadeHint {
+      0%, 70% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+  </style>
+  <script type="module" crossorigin src="/gallery-3d-xreal/assets/index-BbMMmjrN.js"></script>
+</head>
+<body>
+  <div id="loader">
+    gallery ar
+    <span class="sub">xreal edition</span>
+  </div>
+  <button id="xr-button">Enter AR</button>
+  <div id="info">drag to orbit · tap to select</div>
+  <div id="ar-overlay">
+    <div id="ar-instructions">tap surface to place gallery</div>
+  </div>
+  <div id="book-overlay">
+    <button id="book-close">✕ close</button>
+    <div style="flex:1"></div>
+    <div id="book-hint">swipe to flip pages</div>
+    <div id="book-page-indicator">1 / 6</div>
+  </div>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+    }
+  </script>
+</body>
+</html>
