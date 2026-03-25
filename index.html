@@ -74,6 +74,57 @@
       backdrop-filter: blur(10px);
       pointer-events: none;
     }
+    /* Book overlay */
+    #book-overlay {
+      position: fixed; inset: 0; z-index: 70;
+      display: none;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-direction: column;
+      pointer-events: none;
+      padding: 20px;
+    }
+    #book-close {
+      align-self: flex-end;
+      pointer-events: auto;
+      padding: 10px 24px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+      font-family: 'Helvetica Neue', sans-serif;
+      font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer; border-radius: 20px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: all 0.3s ease;
+    }
+    #book-close:hover, #book-close:active {
+      background: rgba(255,255,255,0.25);
+      border-color: rgba(255,255,255,0.4);
+    }
+    #book-page-indicator {
+      align-self: center;
+      color: rgba(255,255,255,0.5);
+      font-family: 'Helvetica Neue', sans-serif;
+      font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+      background: rgba(0,0,0,0.3);
+      padding: 8px 20px;
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    #book-hint {
+      align-self: center;
+      color: rgba(255,255,255,0.3);
+      font-family: 'Helvetica Neue', sans-serif;
+      font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 10px;
+      animation: fadeHint 3s ease-in-out forwards;
+    }
+    @keyframes fadeHint {
+      0%, 70% { opacity: 1; }
+      100% { opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -85,6 +136,12 @@
   <div id="info">drag to orbit · tap to select</div>
   <div id="ar-overlay">
     <div id="ar-instructions">tap surface to place gallery</div>
+  </div>
+  <div id="book-overlay">
+    <button id="book-close">✕ close</button>
+    <div style="flex:1"></div>
+    <div id="book-hint">swipe to flip pages</div>
+    <div id="book-page-indicator">1 / 6</div>
   </div>
   <script type="module" src="/src/main.js"></script>
   <script>

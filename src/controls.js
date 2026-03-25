@@ -6,6 +6,7 @@ import * as THREE from 'three'
  */
 export function setupControls(camera, domElement) {
   const state = {
+    enabled: true,
     isDragging: false,
     previousMouse: { x: 0, y: 0 },
     spherical: new THREE.Spherical(4, Math.PI / 2.2, 0),
@@ -25,6 +26,7 @@ export function setupControls(camera, domElement) {
 
   // Mouse events
   domElement.addEventListener('pointerdown', (e) => {
+    if (!state.enabled) return
     state.isDragging = true
     state.previousMouse.x = e.clientX
     state.previousMouse.y = e.clientY
@@ -32,7 +34,7 @@ export function setupControls(camera, domElement) {
   })
 
   domElement.addEventListener('pointermove', (e) => {
-    if (!state.isDragging) return
+    if (!state.enabled || !state.isDragging) return
     const dx = e.clientX - state.previousMouse.x
     const dy = e.clientY - state.previousMouse.y
     state.damping.theta -= dx * 0.005
@@ -42,6 +44,7 @@ export function setupControls(camera, domElement) {
   })
 
   domElement.addEventListener('pointerup', () => {
+    if (!state.enabled) return
     state.isDragging = false
     setTimeout(() => {
       if (!state.isDragging) state.autoRotate = true
@@ -49,12 +52,14 @@ export function setupControls(camera, domElement) {
   })
 
   domElement.addEventListener('wheel', (e) => {
+    if (!state.enabled) return
     state.damping.radius += e.deltaY * 0.005
   }, { passive: true })
 
   // Touch support (Beam Pro)
   let touchStartDist = 0
   domElement.addEventListener('touchstart', (e) => {
+    if (!state.enabled) return
     if (e.touches.length === 1) {
       state.isDragging = true
       state.previousMouse.x = e.touches[0].clientX
@@ -69,6 +74,7 @@ export function setupControls(camera, domElement) {
   }, { passive: true })
 
   domElement.addEventListener('touchmove', (e) => {
+    if (!state.enabled) return
     if (e.touches.length === 1 && state.isDragging) {
       const dx = e.touches[0].clientX - state.previousMouse.x
       const dy = e.touches[0].clientY - state.previousMouse.y
@@ -87,6 +93,7 @@ export function setupControls(camera, domElement) {
   }, { passive: true })
 
   domElement.addEventListener('touchend', () => {
+    if (!state.enabled) return
     state.isDragging = false
     setTimeout(() => {
       if (!state.isDragging) state.autoRotate = true
@@ -94,7 +101,10 @@ export function setupControls(camera, domElement) {
   })
 
   return {
+    get enabled() { return state.enabled },
+    set enabled(v) { state.enabled = v },
     update(delta) {
+      if (!state.enabled) return
       if (state.autoRotate) {
         state.damping.theta += state.autoRotateSpeed * 0.016
       }
